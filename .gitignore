@@ -18,7 +18,7 @@ __pycache__
 */Solution
 *.Identifier
 data
-test_py
+# test_py
 cmake-build-debug
 test_py_v2
 test_debug
@@ -28,3 +28,4 @@ main_old
 .arts
 src_merge/Solution.cpp
 time_log.txt
+!test_py/vis_output/backup/practice_00_n40_m100_holes_test_vis.png

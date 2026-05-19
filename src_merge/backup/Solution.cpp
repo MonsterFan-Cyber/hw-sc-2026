@@ -2666,8 +2666,8 @@ inline nfp::NFPMatrix g_nfps;
 inline SpatialHash g_hash;
 inline  geom:: ContainPolys g_contains;
 inline chrono::steady_clock::time_point g_start;
-// inline mt19937 g_rng(42);
-inline mt19937 g_rng(std::random_device{}());
+inline mt19937 g_rng(42);
+// inline mt19937 g_rng(std::random_device{}());
 inline double elapsed() {
     return chrono::duration<double>(
         chrono::steady_clock::now() - g_start).count();
