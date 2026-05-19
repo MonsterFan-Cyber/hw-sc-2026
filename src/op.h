@@ -10,9 +10,7 @@ static bool saSwapOp(vector<Polygon>& P, int n, const Boundary& bd,
                      vector<int>& candidates
                      DEBUG_SA_STATS_PARAM)
 {
-#ifdef DEBUG_LOG
-    dbg.snapSwapTrials++;
-#endif
+
     int ia = -1, ib = -1;
     if (progress < 0.35) {
         ia = 0;
@@ -112,16 +110,11 @@ static bool saSwapOp(vector<Polygon>& P, int n, const Boundary& bd,
                 curCost += delta2;
                 overlappingSet.erase(ia);
                 overlappingSet.erase(ib);
-#ifdef DEBUG_LOG
-                dbg.snapSwapAccepts++;
-#endif
+
                 if (curCost < bestCost) {
                     bestCost = curCost;
                     for (int i=0;i<n;i++){bestTx[i]=P[i].tx;bestTy[i]=P[i].ty;}
-#ifdef DEBUG_LOG
-                    dbg.dbgBestL=bestCost;
-                    logLine(dbg.phaseName,dbg.dbgIter,-1,elapsed(),bestCost,dbg.dbgBestL,"best_update");
-#endif
+
                 }
             } else { P[ia].tx=otxa;P[ia].ty=otya;P[ib].tx=otxb;P[ib].ty=otyb; }
         } else {
@@ -167,16 +160,9 @@ static bool saSwapOp(vector<Polygon>& P, int n, const Boundary& bd,
                             curCost+=delta2;
                             overlappingSet.erase(ia);
                             overlappingSet.erase(ib);
-#ifdef DEBUG_LOG
-                            dbg.snapSwapAccepts++;
-#endif
                             if (curCost<bestCost) {
                                 bestCost=curCost;
                                 for (int i=0;i<n;i++){bestTx[i]=P[i].tx;bestTy[i]=P[i].ty;}
-#ifdef DEBUG_LOG
-                                dbg.dbgBestL=bestCost;
-                                logLine(dbg.phaseName,dbg.dbgIter,-1,elapsed(),bestCost,dbg.dbgBestL,"best_update(mtv_swap)");
-#endif
                             }
                         }
                     }
@@ -186,23 +172,7 @@ static bool saSwapOp(vector<Polygon>& P, int n, const Boundary& bd,
         }
         g_hash.insert(ia,P); g_hash.insert(ib,P);
     }
-#ifdef DEBUG_LOG
-    {
-        double nowSnap = elapsed();
-        if (nowSnap - dbg.lastSnapshotTime >= 1.0) {
-            timerSASnapshot(dbg.phaseName, dbg.lastT, dbg.lastStep, curCost, bestCost, dbg.dbgIter,
-                            dbg.snapSwapTrials, dbg.snapSwapAccepts,
-                            dbg.snapMoveTrials, dbg.snapMoveAccepts,
-                            dbg.snapSlideTrials, dbg.snapSlideAccepts);
-            dbg.lastSnapshotTime = nowSnap;
-            dbg.snapSwapTrials=dbg.snapSwapAccepts=0;
-            dbg.snapMoveTrials=dbg.snapMoveAccepts=0;
-            dbg.snapSlideTrials=dbg.snapSlideAccepts=0;
-            dbg.snapIters=0;
-        }
-        if (dbg.dbgIter%1000==0) logLine(dbg.phaseName,dbg.dbgIter,-1,elapsed(),curCost,dbg.dbgBestL,"checkpoint");
-    }
-#endif
+
     return true;
 }
 static bool saMoveOp(vector<Polygon>& P, int n, const Boundary& bd,
@@ -215,9 +185,6 @@ static bool saMoveOp(vector<Polygon>& P, int n, const Boundary& bd,
                      DEBUG_SA_STATS_PARAM)
 {
     const double FAN_FULL_RAD = 2.0 * 60.0 * 3.14159265358979323846 / 180.0;
-#ifdef DEBUG_LOG
-    dbg.snapMoveTrials++;
-#endif
     int    idx = randInt(n);
     double otx = P[idx].tx, oty = P[idx].ty;
     double oldLen = singleDist(P[idx]);
@@ -256,9 +223,6 @@ static bool saMoveOp(vector<Polygon>& P, int n, const Boundary& bd,
     if (onBot   && dy<0.0) dy=0.0;
     if (onTop   && dy>0.0) dy=0.0;
     if (fabs(dx)<1e-9 && fabs(dy)<1e-9) {
-#ifdef DEBUG_LOG
-        if (dbg.dbgIter%1000==0) logLine(dbg.phaseName,dbg.dbgIter,-1,elapsed(),curCost,dbg.dbgBestL,"checkpoint");
-#endif
         return false;
     }
     g_hash.remove(idx, P);
@@ -277,22 +241,14 @@ static bool saMoveOp(vector<Polygon>& P, int n, const Boundary& bd,
                 accepted = true;
                 curCost += delta;
                 overlappingSet.erase(idx);
-#ifdef DEBUG_LOG
-                dbg.snapMoveAccepts++;
-#endif
+
                 if (curCost < bestCost) {
                     bestCost = curCost;
                     for (int i=0;i<n;i++){bestTx[i]=P[i].tx;bestTy[i]=P[i].ty;}
-#ifdef DEBUG_LOG
-                    dbg.dbgBestL=bestCost;
-                    logLine(dbg.phaseName,dbg.dbgIter,-1,elapsed(),bestCost,dbg.dbgBestL,"best_update");
-#endif
                 }
             }
         } else if (enableMTVSlide && globalFeasible) {
-#ifdef DEBUG_LOG
-            dbg.snapSlideTrials++;
-#endif
+
             Vertex mtv      = {0.0, 0.0};
             bool   mtvValid = false;
             for (int j : candidates) {
@@ -324,16 +280,10 @@ static bool saMoveOp(vector<Polygon>& P, int n, const Boundary& bd,
                     if (delta < 0.0 || randDouble() < exp(-delta/T)) {
                         accepted  = true;
                         curCost  += delta;
-#ifdef DEBUG_LOG
-                        dbg.snapSlideAccepts++;
-#endif
+
                         if (curCost < bestCost) {
                             bestCost = curCost;
                             for (int i=0;i<n;i++){bestTx[i]=P[i].tx;bestTy[i]=P[i].ty;}
-#ifdef DEBUG_LOG
-                            dbg.dbgBestL=bestCost;
-                            logLine(dbg.phaseName,dbg.dbgIter,-1,elapsed(),bestCost,dbg.dbgBestL,"best_update(slide)");
-#endif
                         }
                     }
                 }
@@ -367,10 +317,6 @@ static bool saMoveOp(vector<Polygon>& P, int n, const Boundary& bd,
                             if (curCost < bestCost) {
                                 bestCost = curCost;
                                 for (int i = 0; i < n; i++) { bestTx[i] = P[i].tx; bestTy[i] = P[i].ty; }
-#ifdef DEBUG_LOG
-                                dbg.dbgBestL = bestCost;
-                                logLine(dbg.phaseName, dbg.dbgIter, -1, elapsed(), bestCost, dbg.dbgBestL, "best_update(mtv_push_move)");
-#endif
                             }
                         }
                     }
@@ -380,21 +326,7 @@ static bool saMoveOp(vector<Polygon>& P, int n, const Boundary& bd,
     }
     if (!accepted) { P[idx].tx=otx; P[idx].ty=oty; }
     g_hash.insert(idx, P);
-#ifdef DEBUG_LOG
-    double nowSnap = elapsed();
-    if (nowSnap - dbg.lastSnapshotTime >= 1.0) {
-        timerSASnapshot(dbg.phaseName, dbg.lastT, dbg.lastStep, curCost, bestCost, dbg.dbgIter,
-                        dbg.snapSwapTrials, dbg.snapSwapAccepts,
-                        dbg.snapMoveTrials, dbg.snapMoveAccepts,
-                        dbg.snapSlideTrials, dbg.snapSlideAccepts);
-        dbg.lastSnapshotTime = nowSnap;
-        dbg.snapSwapTrials=dbg.snapSwapAccepts=0;
-        dbg.snapMoveTrials=dbg.snapMoveAccepts=0;
-        dbg.snapSlideTrials=dbg.snapSlideAccepts=0;
-        dbg.snapIters=0;
-    }
-    if (dbg.dbgIter%1000==0) logLine(dbg.phaseName,dbg.dbgIter,-1,elapsed(),curCost,dbg.dbgBestL,"checkpoint");
-#endif
+
     return accepted;
 }
 static bool saJumpOp(vector<Polygon>& P, int n, const Boundary& bd,
@@ -408,9 +340,7 @@ static bool saJumpOp(vector<Polygon>& P, int n, const Boundary& bd,
     const double FAN_HALF_RAD = 45.0 * 3.14159265358979323846 / 180.0;
     const double JUMP_TEMP_FACTOR = 2.0;
     const double JUMP_MIN_DIST_FACTOR = 0.05;
-#ifdef DEBUG_LOG
-    dbg.snapJumpTrials++;
-#endif
+
     vector<double> weights(n);
     double totalW = 0.0;
     for (int k = 0; k < n; k++) {
@@ -504,16 +434,11 @@ static bool saJumpOp(vector<Polygon>& P, int n, const Boundary& bd,
                 accepted = true;
                 curCost += delta;
                 overlappingSet.erase(idx);
-#ifdef DEBUG_LOG
-                dbg.snapJumpAccepts++;
-#endif
+
                 if (curCost < bestCost) {
                     bestCost = curCost;
                     for (int i = 0; i < n; i++) { bestTx[i] = P[i].tx; bestTy[i] = P[i].ty; }
-#ifdef DEBUG_LOG
-                    dbg.dbgBestL = bestCost;
-                    logLine(dbg.phaseName, dbg.dbgIter, -1, elapsed(), bestCost, dbg.dbgBestL, "best_update(jump)");
-#endif
+
                 }
             }
         } else {
@@ -543,16 +468,9 @@ static bool saJumpOp(vector<Polygon>& P, int n, const Boundary& bd,
                             accepted = true;
                             curCost += delta;
                             overlappingSet.erase(idx);
-#ifdef DEBUG_LOG
-                            dbg.snapJumpAccepts++;
-#endif
                             if (curCost < bestCost) {
                                 bestCost = curCost;
                                 for (int i = 0; i < n; i++) { bestTx[i] = P[i].tx; bestTy[i] = P[i].ty; }
-#ifdef DEBUG_LOG
-                                dbg.dbgBestL = bestCost;
-                                logLine(dbg.phaseName, dbg.dbgIter, -1, elapsed(), bestCost, dbg.dbgBestL, "best_update(jump_mtv)");
-#endif
                             }
                         }
                     }
@@ -562,23 +480,6 @@ static bool saJumpOp(vector<Polygon>& P, int n, const Boundary& bd,
     }
     if (!accepted) { P[idx].tx = otx; P[idx].ty = oty; }
     g_hash.insert(idx, P);
-#ifdef DEBUG_LOG
-    double nowSnap = elapsed();
-    if (nowSnap - dbg.lastSnapshotTime >= 1.0) {
-        timerSASnapshot(dbg.phaseName, dbg.lastT, dbg.lastStep, curCost, bestCost, dbg.dbgIter,
-                        dbg.snapSwapTrials, dbg.snapSwapAccepts,
-                        dbg.snapMoveTrials, dbg.snapMoveAccepts,
-                        dbg.snapSlideTrials, dbg.snapSlideAccepts,
-                        dbg.snapJumpTrials, dbg.snapJumpAccepts);
-        dbg.lastSnapshotTime = nowSnap;
-        dbg.snapSwapTrials=dbg.snapSwapAccepts=0;
-        dbg.snapMoveTrials=dbg.snapMoveAccepts=0;
-        dbg.snapSlideTrials=dbg.snapSlideAccepts=0;
-        dbg.snapJumpTrials=dbg.snapJumpAccepts=0;
-        dbg.snapIters=0;
-    }
-    if (dbg.dbgIter%1000==0) logLine(dbg.phaseName,dbg.dbgIter,-1,elapsed(),curCost,dbg.dbgBestL,"checkpoint");
-#endif
     return accepted;
 }
 static double globalJumpProb(double progress) {
@@ -599,9 +500,6 @@ static bool randomJumpOp(vector<Polygon>& P, int n, const Boundary& bd,
                           DEBUG_SA_STATS_PARAM)
 {
     if (overlappingSet.empty()) return false;
-#ifdef DEBUG_LOG
-    dbg.snapRandomJumpTrials++;
-#endif
     int idx = -1;
     double oldPenalty = 0.0;
     double maxMTV = 0.0;
@@ -703,16 +601,10 @@ static bool randomJumpOp(vector<Polygon>& P, int n, const Boundary& bd,
                 accepted = true;
                 curCost += delta;
                 overlappingSet.erase(idx);
-#ifdef DEBUG_LOG
-                dbg.snapRandomJumpAccepts++;
-#endif
+
                 if (curCost < bestCost) {
                     bestCost = curCost;
                     for (int i = 0; i < n; i++) { bestTx[i] = P[i].tx; bestTy[i] = P[i].ty; }
-#ifdef DEBUG_LOG
-                    dbg.dbgBestL = bestCost;
-                    logLine(dbg.phaseName, dbg.dbgIter, -1, elapsed(), bestCost, dbg.dbgBestL, "best_update(rjump)");
-#endif
                 }
             }
         } else {
@@ -741,16 +633,9 @@ static bool randomJumpOp(vector<Polygon>& P, int n, const Boundary& bd,
                             accepted = true;
                             curCost += delta;
                             overlappingSet.erase(idx);
-#ifdef DEBUG_LOG
-                            dbg.snapRandomJumpAccepts++;
-#endif
                             if (curCost < bestCost) {
                                 bestCost = curCost;
                                 for (int i = 0; i < n; i++) { bestTx[i] = P[i].tx; bestTy[i] = P[i].ty; }
-#ifdef DEBUG_LOG
-                                dbg.dbgBestL = bestCost;
-                                logLine(dbg.phaseName, dbg.dbgIter, -1, elapsed(), bestCost, dbg.dbgBestL, "best_update(rjump_mtv)");
-#endif
                             }
                         }
                     }
@@ -760,22 +645,5 @@ static bool randomJumpOp(vector<Polygon>& P, int n, const Boundary& bd,
     }
     if (!accepted) { P[idx].tx = otx; P[idx].ty = oty; }
     g_hash.insert(idx, P);
-#ifdef DEBUG_LOG
-    double nowSnap = elapsed();
-    if (nowSnap - dbg.lastSnapshotTime >= 1.0) {
-        timerSASnapshot(dbg.phaseName, dbg.lastT, dbg.lastStep, curCost, bestCost, dbg.dbgIter,
-                        dbg.snapSwapTrials, dbg.snapSwapAccepts,
-                        dbg.snapMoveTrials, dbg.snapMoveAccepts,
-                        dbg.snapSlideTrials, dbg.snapSlideAccepts,
-                        dbg.snapJumpTrials, dbg.snapJumpAccepts);
-        dbg.lastSnapshotTime = nowSnap;
-        dbg.snapSwapTrials=dbg.snapSwapAccepts=0;
-        dbg.snapMoveTrials=dbg.snapMoveAccepts=0;
-        dbg.snapSlideTrials=dbg.snapSlideAccepts=0;
-        dbg.snapJumpTrials=dbg.snapJumpAccepts=0;
-        dbg.snapIters=0;
-    }
-    if (dbg.dbgIter%1000==0) logLine(dbg.phaseName,dbg.dbgIter,-1,elapsed(),curCost,dbg.dbgBestL,"checkpoint");
-#endif
     return accepted;
 }

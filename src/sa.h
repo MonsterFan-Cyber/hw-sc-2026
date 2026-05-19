@@ -3,10 +3,7 @@
 #include "lg.h"
 #include "op.h"
 #include <unordered_set>
-#ifdef DEBUG_LOG
-#include <cstring>
-#include <ctime>
-#endif
+
 
 static const double PULL_ANGLES_DEG[] = {
     0.0,
@@ -45,9 +42,6 @@ static void shelfPlace_LB(const vector<int>& perm, vector<Polygon>& P, const Bou
     }
 }
 static void shelfPlace(const vector<int>& perm, vector<Polygon>& P, const Boundary& bd) {
-#ifdef DEBUG_LOG
-    g_cntShelfPlace++;
-#endif
     int n=(int)P.size();
     shelfPlace_BL(perm, P, bd);
     double L_BL = calcLPrime(P);
@@ -82,15 +76,7 @@ static double evalAvgFreeMove(vector<Polygon>& P, const Boundary& bd) {
     double totalFree = 0.0;
     double minFree   = 1e18;
     double maxFree   = 0.0;
-#ifdef DEBUG_LOG
-    double t0 = elapsed();
-    if (g_timerFile) {
-        fprintf(g_timerFile,
-            "%12.4f  [TIGHTNESS   ] %-20s  n=%d  dirs=%d  prec=%.0e  probing...\n",
-            t0, "evalAvgFreeMove", n, dirs, PROBE_PREC);
-        fflush(g_timerFile);
-    }
-#endif
+
     for (int idx = 0; idx < n; idx++) {
         double origTx = P[idx].tx, origTy = P[idx].ty;
         double polyFree = 0.0;
@@ -133,20 +119,6 @@ static double evalAvgFreeMove(vector<Polygon>& P, const Boundary& bd) {
         if (avg4 > maxFree) maxFree = avg4;
     }
     double avgFree = totalFree / n;
-#ifdef DEBUG_LOG
-    if (g_timerFile) {
-        fprintf(g_timerFile,
-            "%12.4f  [TIGHTNESS   ] %-20s"
-            "  avgFreeMove=%10.6f"
-            "  minFreeMove=%10.6f"
-            "  maxFreeMove=%10.6f"
-            "  cost=%.3fs\n",
-            elapsed(), "evalAvgFreeMove",
-            avgFree, minFree, maxFree,
-            elapsed() - t0);
-        fflush(g_timerFile);
-    }
-#endif
     return avgFree;
 }
 static void saOnPerm(vector<Polygon>& P, vector<int>& perm, const Boundary& bd) {
@@ -158,24 +130,13 @@ static void saOnPerm(vector<Polygon>& P, vector<int>& perm, const Boundary& bd) 
     for (int i=0; i<n; i++) avgSize+=P[i].hw+P[i].hh;
     avgSize/=n;
     double T=fmax(curCost*0.3, avgSize*0.5);
-#ifdef DEBUG_LOG
-    logPhaseHeader("saOnPerm");
-    long long dbgIter=0; double dbgBestL=calcLPrime(P);
-    logLine("saOnPerm",0,-1,elapsed(),dbgBestL,dbgBestL,"snapshot");
-    double lastSnap = elapsed();
-    const double SNAP_INTERVAL = 1.0;
-    long long snapIter = 0;
-    double snapCostSum = 0.0;
-#endif
+
     int iter=0;
     vector<double> savedTx(n), savedTy(n);
     while (T > SA_TMIN) {
         iter++;
         if (iter%500==0 && elapsed()>T_SA_PERM) break;
-#ifdef DEBUG_LOG
-        dbgIter++;
-        snapIter++;
-#endif
+
         vector<int> savedPerm=perm;
         for (int i=0;i<n;i++){savedTx[i]=P[i].tx;savedTy[i]=P[i].ty;}
         double r=randDouble();
@@ -199,53 +160,23 @@ static void saOnPerm(vector<Polygon>& P, vector<int>& perm, const Boundary& bd) 
             curCost=newCost;
             if (curCost<bestCost) {
                 bestCost=curCost; bestPerm=perm;
-#ifdef DEBUG_LOG
-                double curL=calcLPrime(P); dbgBestL=fmin(dbgBestL,curL);
-                logLine("saOnPerm",dbgIter,-1,elapsed(),curL,dbgBestL,"best_update");
-#endif
+
             }
         } else { perm=savedPerm; for (int i=0;i<n;i++){P[i].tx=savedTx[i];P[i].ty=savedTy[i];} }
-#ifdef DEBUG_LOG
-        if (dbgIter%1000==0) {
-            double curL=calcLPrime(P);
-            logLine("saOnPerm",dbgIter,-1,elapsed(),curL,dbgBestL,"checkpoint");
-        }
-        double nowSnap = elapsed();
-        if (nowSnap - lastSnap >= SNAP_INTERVAL) {
-            double curL = calcLPrime(P);
-            if (g_timerFile) {
-                fprintf(g_timerFile,
-                    "%12.4f  [SNAPSHOT     ] %-20s  T=%10.4f  curCost(perm)=%12.6f  curL'=%12.6f  bestL'=%12.6f  iters_in_snap=%lld\n",
-                    nowSnap, "saOnPerm", T, curCost, curL, dbgBestL, snapIter);
-                fflush(g_timerFile);
-            }
-            lastSnap = nowSnap;
-            snapIter = 0;
-        }
-#endif
+
         T *= SA_PERM_ALPHA;
     }
     perm=bestPerm; shelfPlace(perm,P,bd);
-#ifdef DEBUG_LOG
-    logPhaseSummary("saOnPerm",dbgIter,-1,elapsed());
-#endif
+
 }
 static void aabbPullback(vector<Polygon>& P, const Boundary& bd) {
     int n=(int)P.size();
     vector<int> order(n); for (int i=0;i<n;i++) order[i]=i;
-#ifdef DEBUG_LOG
-    logPhaseHeader("aabbPullback");
-    int dbgRound=0; double dbgBestL=calcLPrime(P);
-    logLine("aabbPullback",-1,0,elapsed(),dbgBestL,dbgBestL,"snapshot");
-#endif
+
     bool improved=true;
     while (improved && elapsed()<T_AABB_PULL) {
         improved=false;
-#ifdef DEBUG_LOG
-        dbgRound++;
-        double tRoundStart = elapsed();
-        double lBeforeRound = calcLPrime(P);
-#endif
+
         sort(order.begin(),order.end(),[&](int a,int b){return singleDist(P[a])>singleDist(P[b]);});
         for (int idx:order) {
             if (elapsed()>T_AABB_PULL) break;
@@ -262,34 +193,20 @@ static void aabbPullback(vector<Polygon>& P, const Boundary& bd) {
             P[idx].tx=origTx+nx*lo; P[idx].ty=origTy+ny*lo;
             if (lo>AABB_PREC) improved=true;
         }
-#ifdef DEBUG_LOG
-        double curL=calcLPrime(P); dbgBestL=fmin(dbgBestL,curL);
-        logLine("aabbPullback",-1,dbgRound,elapsed(),curL,dbgBestL,"round");
-        timerRound("aabbPullback", dbgRound, tRoundStart, lBeforeRound, curL);
-#endif
+
     }
-#ifdef DEBUG_LOG
-    logPhaseSummary("aabbPullback",-1,dbgRound,elapsed());
-#endif
+
 }
 static void exactPullback(vector<Polygon>& P, const Boundary& bd,
                           double timeLimit, const char* phaseName = "exactPullback") {
     int n=(int)P.size();
     vector<int> order(n); for (int i=0;i<n;i++) order[i]=i;
     vector<int> cands; cands.reserve(32);
-#ifdef DEBUG_LOG
-    logPhaseHeader(phaseName);
-    int dbgRound=0; double dbgBestL=calcLPrime(P);
-    logLine(phaseName,-1,0,elapsed(),dbgBestL,dbgBestL,"snapshot");
-#endif
+
     bool improved=true;
     while (improved && elapsed()<timeLimit) {
         improved=false;
-#ifdef DEBUG_LOG
-        dbgRound++;
-        double tRoundStart = elapsed();
-        double lBeforeRound = calcLPrime(P);
-#endif
+
         sort(order.begin(),order.end(),[&](int a,int b){return singleDist(P[a])>singleDist(P[b]);});
         for (int idx:order) {
             if (elapsed()>timeLimit) break;
@@ -387,15 +304,9 @@ static void exactPullback(vector<Polygon>& P, const Boundary& bd,
             if (bestGain>EXACT_PREC) { P[idx].tx=bestNewTx; P[idx].ty=bestNewTy; improved=true; }
             g_hash.insert(idx,P);
         }
-#ifdef DEBUG_LOG
-        double curL=calcLPrime(P); dbgBestL=fmin(dbgBestL,curL);
-        logLine(phaseName,-1,dbgRound,elapsed(),curL,dbgBestL,"round");
-        timerRound(phaseName, dbgRound, tRoundStart, lBeforeRound, curL);
-#endif
+
     }
-#ifdef DEBUG_LOG
-    logPhaseSummary(phaseName,-1,dbgRound,elapsed());
-#endif
+
 }
 static void positionSAHigh(vector<Polygon>& P, const Boundary& bd,
                            double T_init, double T_end, double time_limit)
@@ -444,47 +355,7 @@ static void positionSAHigh(vector<Polygon>& P, const Boundary& bd,
     avgSize /= n;
     double stepInit = avgSize * stepInitFactor;
     vector<int> candidates; candidates.reserve(32);
-#ifdef DEBUG_LOG
-    logPhaseHeader(phaseName);
-    DebugSAStats dbg;
-    dbg.dbgIter = 0;
-    dbg.dbgBestL = curCost;
-    dbg.snapSwapTrials = 0; dbg.snapSwapAccepts = 0;
-    dbg.snapMoveTrials = 0; dbg.snapMoveAccepts = 0;
-    dbg.snapSlideTrials = 0; dbg.snapSlideAccepts = 0;
-    dbg.snapJumpTrials = 0; dbg.snapJumpAccepts = 0;
-    dbg.snapRandomJumpTrials = 0; dbg.snapRandomJumpAccepts = 0;
-    dbg.snapIters = 0;
-    dbg.lastT = T_init;
-    dbg.lastStep = stepInit;
-    dbg.lastSnapshotTime = tStart;
-    dbg.phaseName = phaseName;
-    logLine(phaseName, 0, -1, elapsed(), curCost, dbg.dbgBestL, "snapshot");
-    if (g_logFile) {
-        fprintf(g_logFile,
-            "# T_init=%.6f  T_end=%.2e  time_limit=%.1f"
-            "  towardOriginProb=%.2f  avgSize=%.4f"
-            "  stepInitFactor=%.4f  stepInit=%.6f"
-            "  enableMTVSlide=%d  JUMP_SIZE_WEIGHT=%.2f\n",
-            T_init, T_end, time_limit,
-            towardOriginProb, avgSize,
-            stepInitFactor, stepInit,
-            (int)enableMTVSlide, JUMP_SIZE_WEIGHT);
-        fflush(g_logFile);
-    }
-    if (g_timerFile) {
-        fprintf(g_timerFile,
-            "%12.4f  [SA_PARAMS   ] %-20s"
-            "  stepInitFactor=%.4f  stepInit=%.6f"
-            "  T_init=%.6f  T_end=%.2e"
-            "  enableMTVSlide=%d  JUMP_SIZE_WEIGHT=%.2f\n",
-            elapsed(), phaseName,
-            stepInitFactor, stepInit,
-            T_init, T_end,
-            (int)enableMTVSlide, JUMP_SIZE_WEIGHT);
-        fflush(g_timerFile);
-    }
-#endif
+
     int iterCheck = 0;
     double nowElapsed = elapsed();
     while (true) {
@@ -527,12 +398,7 @@ static void positionSAHigh(vector<Polygon>& P, const Boundary& bd,
         double T = T_init_cycle * pow(fmax(T_end_cycle / T_init_cycle, 1e-15), progress_cycle);
         double step = fmax(avgSize * 0.005,
                            avgSize * stepInitFactor * (1.0 - progress_cycle * 0.975));
-#ifdef DEBUG_LOG
-        dbg.dbgIter++;
-        dbg.snapIters++;
-        dbg.lastT    = T;
-        dbg.lastStep = step;
-#endif
+
         double jumpProb = 0.0;
         if (progress_cycle > JUMP_BEGIN_PROG_HIGH) {
             jumpProb = JUMP_BACK_PROB_HIGH * (progress_cycle - JUMP_BEGIN_PROG_HIGH) / (1-JUMP_BEGIN_PROG_HIGH);
@@ -666,9 +532,7 @@ static void positionSAHigh(vector<Polygon>& P, const Boundary& bd,
     } else {
         for (int i = 0; i < n; i++) { P[i].tx = bestTx[i]; P[i].ty = bestTy[i]; }
     }
-#ifdef DEBUG_LOG
-    logPhaseSummary(phaseName, dbg.dbgIter, -1, elapsed());
-#endif
+
 }
 static void positionSALow(vector<Polygon>& P, const Boundary& bd,
                           double T_init, double T_end, double time_limit,
@@ -702,47 +566,7 @@ static void positionSALow(vector<Polygon>& P, const Boundary& bd,
     avgSize /= n;
     double stepInit = avgSize * stepInitFactor;
     vector<int> candidates; candidates.reserve(32);
-#ifdef DEBUG_LOG
-    logPhaseHeader(phaseName);
-    DebugSAStats dbg;
-    dbg.dbgIter = 0;
-    dbg.dbgBestL = curCost;
-    dbg.snapSwapTrials = 0; dbg.snapSwapAccepts = 0;
-    dbg.snapMoveTrials = 0; dbg.snapMoveAccepts = 0;
-    dbg.snapSlideTrials = 0; dbg.snapSlideAccepts = 0;
-    dbg.snapJumpTrials = 0; dbg.snapJumpAccepts = 0;
-    dbg.snapRandomJumpTrials = 0; dbg.snapRandomJumpAccepts = 0;
-    dbg.snapIters = 0;
-    dbg.lastT = T_init;
-    dbg.lastStep = stepInit;
-    dbg.lastSnapshotTime = tStart;
-    dbg.phaseName = phaseName;
-    logLine(phaseName, 0, -1, elapsed(), curCost, dbg.dbgBestL, "snapshot");
-    if (g_logFile) {
-        fprintf(g_logFile,
-            "# T_init=%.6f  T_end=%.2e  time_limit=%.1f"
-            "  towardOriginProb=%.2f  avgSize=%.4f"
-            "  stepInitFactor=%.4f  stepInit=%.6f"
-            "  enableMTVSlide=%d  JUMP_SIZE_WEIGHT=%.2f\n",
-            T_init, T_end, time_limit,
-            towardOriginProb, avgSize,
-            stepInitFactor, stepInit,
-            (int)enableMTVSlide, JUMP_SIZE_WEIGHT);
-        fflush(g_logFile);
-    }
-    if (g_timerFile) {
-        fprintf(g_timerFile,
-            "%12.4f  [SA_PARAMS   ] %-20s"
-            "  stepInitFactor=%.4f  stepInit=%.6f"
-            "  T_init=%.6f  T_end=%.2e"
-            "  enableMTVSlide=%d  JUMP_SIZE_WEIGHT=%.2f\n",
-            elapsed(), phaseName,
-            stepInitFactor, stepInit,
-            T_init, T_end,
-            (int)enableMTVSlide, JUMP_SIZE_WEIGHT);
-        fflush(g_timerFile);
-    }
-#endif
+
     int iterCheck = 0;
     double nowElapsed = elapsed();
     while (true) {
@@ -756,12 +580,7 @@ static void positionSALow(vector<Polygon>& P, const Boundary& bd,
         double T = T_init * pow(fmax(T_end / T_init, 1e-15), progress);
         double step = fmax(avgSize * 0.005,
                            avgSize * stepInitFactor * (1.0 - progress * 0.975));
-#ifdef DEBUG_LOG
-        dbg.dbgIter++;
-        dbg.snapIters++;
-        dbg.lastT    = T;
-        dbg.lastStep = step;
-#endif
+
         double jumpProb = 0.05 + 0.10 * (T / T_init);
         double randV = randDouble();
         if (randV < 0.20 && n >= 2) {
@@ -783,7 +602,5 @@ static void positionSALow(vector<Polygon>& P, const Boundary& bd,
         }
     }
     for (int i=0;i<n;i++){P[i].tx=bestTx[i];P[i].ty=bestTy[i];}
-#ifdef DEBUG_LOG
-    logPhaseSummary(phaseName, dbg.dbgIter, -1, elapsed());
-#endif
+
 }

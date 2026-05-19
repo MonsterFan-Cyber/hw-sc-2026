@@ -61,10 +61,6 @@ struct SpatialHash {
             for (int j:cells[x*nH+y])
                 if (j!=idx&&!visited[j]) { visited[j]=true; out.push_back(j); }
         for (int j:out) visited[j]=false;
-#ifdef DEBUG_LOG
-        g_cntGetCandidates++;
-        g_sumCands += (long long)out.size();
-#endif
     }
     void rebuild(const Boundary& bd, const vector<Polygon>& P, double cellSize) { build(bd,P,cellSize); }
 };

@@ -113,7 +113,7 @@ int main(int argc, char *argv[]) {
     sched_setaffinity(0, sizeof(cpuset), &cpuset);
     }
 #endif
-  TL_SET_OUTPUT("dist/log/time/time_log.txt");
+
 #if LOCAL_RUN
     if (argc > 1) {
         FILE* fp = freopen(argv[1], "r", stdin);
@@ -124,156 +124,33 @@ int main(int argc, char *argv[]) {
     }
 #endif
     g_start = chrono::steady_clock::now();
-#ifdef DEBUG_LOG
-    logInitFile();
-#endif
-    Polygon feasiblePoly;
-    Boundary bd; vector<Polygon> P;
+
+    Polygon feasiblePoly; Boundary bd; vector<Polygon> P;
     readInput(feasiblePoly, bd, P);
     int n = (int)P.size();
-#ifdef DEBUG_LOG
-    timerInitFile(n, bd);
-    if (g_timerFile) {
-        fprintf(g_timerFile, "%12.4f  [PHASE  start] %-20s  n=%d  boundary=[%.3f,%.3f]x[%.3f,%.3f]\n",
-                elapsed(), "readInput_done", n,
-                bd.xMin, bd.xMax, bd.yMin, bd.yMax);
-        fflush(g_timerFile);
-    }
-#endif
     vector<int> perm(n);
     for (int i=0; i<n; i++) perm[i]=i;
     stable_sort(perm.begin(), perm.end(), [&](int a, int b) {
         return P[a].hw*P[a].hh < P[b].hw*P[b].hh;
     });
-#ifdef DEBUG_LOG
-    logPhaseHeader("init_shelf");
-    double initL = calcLPrime(P);
-    logLine("init_shelf", 0, -1, elapsed(), initL, initL, "snapshot");
-#endif
-#ifdef DEBUG_LOG
-    double tPhase = elapsed();
-    double lBefore = calcLPrime(P);
-    timerPhaseStart("saOnPerm", lBefore);
-#endif
+
     saOnPerm(P, perm, bd);
     clampAll(P, bd);
-#ifdef DEBUG_LOG
-    {
-        double lAfter = calcLPrime(P);
-        timerPhaseEnd("saOnPerm", tPhase, lBefore, lAfter, g_cntShelfPlace, -1);
-    }
-#endif
-#ifdef DEBUG_LOG
-    tPhase = elapsed();
-    lBefore = calcLPrime(P);
-    timerPhaseStart("aabbPullback", lBefore);
-#endif
     aabbPullback(P, bd);
-#ifdef DEBUG_LOG
-    {
-        double lAfter = calcLPrime(P);
-        timerPhaseEnd("aabbPullback", tPhase, lBefore, lAfter);
-    }
-    logPhaseHeader("after_aabbPullback");
-    logLine("after_aabbPullback", 0, -1, elapsed(), calcLPrime(P), calcLPrime(P), "snapshot");
-#endif
-#ifdef DEBUG_LOG
-    {
-        double tNfp = elapsed();
-        if (g_timerFile) {
-            fprintf(g_timerFile, "%12.4f  [PHASE  start] %-20s  nfp_pairs=%d\n",
-                    tNfp, "buildNFPMatrix", n*(n-1)/2);
-            fflush(g_timerFile);
-        }
-#endif
-    TL_START("buildNFPMatrix ");
     buildNFPMatrix(P);
     int nfpFailures = g_nfps.getfailuresNum();
-    TL_ATTACH("n = " + to_string(n * (n - 1) / 2));
-    TL_ATTACH("Failures = " + to_string(nfpFailures));
-    if (nfpFailures) {
-        TL_ATTACH("ERROR: The generation of nfp failed.");
-    }
-    TL_END();
-#ifdef DEBUG_LOG
-    if (g_timerFile) {
-            fprintf(g_timerFile, "%12.4f        Failures NFP number: %d",elapsed(),nfpFailures);
-            fprintf(g_timerFile, "%12.4f  [PHASE  end  ] %-20s  cost=%7.3fs\n",
-                    elapsed(), "buildNFPMatrix", elapsed() - tNfp);
-            fflush(g_timerFile);
-        }
-    }
-#endif
+
     {
         double L0 = calcLPrime(P);
-#ifdef DEBUG_LOG
-        tPhase = elapsed(); lBefore = L0;
-        timerPhaseStart("positionSA_high", lBefore);
-        long long itersBeforeSA = g_cntExactOverlap;
-        (void)itersBeforeSA;
-#endif
-        TL_START("positionSA");
         positionSAHigh(P, bd,
                        L0 * 0.03, 
                        L0 * 0.001,
                        T_SA_HIGH_END);
-        TL_ATTACH("fastOverlap calls: " + to_string(g_cntFastOverlap));
-        TL_ATTACH("exactOverlap calls: " + to_string(g_cntExactOverlap));
-        TL_END();
-#ifdef DEBUG_LOG
-        {
-            double lAfter = calcLPrime(P);
-            timerPhaseEnd("positionSA_high", tPhase, lBefore, lAfter);
-        }
-#endif
     }
-#ifdef DEBUG_LOG
-    {
-        double tRebuild = elapsed();
-        if (g_timerFile) {
-            fprintf(g_timerFile, "%12.4f  [PHASE  start] %-20s\n", tRebuild, "hash_rebuild_1");
-            fflush(g_timerFile);
-        }
-#endif
-        g_hash.rebuild(bd, P, buildCellSize(P));
-#ifdef DEBUG_LOG
-        if (g_timerFile) {
-            fprintf(g_timerFile, "%12.4f  [PHASE  end  ] %-20s  cost=%7.3fs\n",
-                    elapsed(), "hash_rebuild_1", elapsed() - tRebuild);
-            fflush(g_timerFile);
-        }
-    }
-#endif
-#ifdef DEBUG_LOG
-    tPhase = elapsed(); lBefore = calcLPrime(P);
-    timerPhaseStart("exactPullback_mid", lBefore);
-#endif
+    g_hash.rebuild(bd, P, buildCellSize(P));
     exactPullback(P, bd, T_EXACT_MID, "exactPullback_mid");
-#ifdef DEBUG_LOG
-    {
-        double lAfter = calcLPrime(P);
-        timerPhaseEnd("exactPullback_mid", tPhase, lBefore, lAfter);
-    }
-#endif
-    {
-#ifdef DEBUG_LOG
-        double tRebuild = elapsed();
-        if (g_timerFile) {
-            fprintf(g_timerFile, "%12.4f  [PHASE  start] %-20s\n",
-                    tRebuild, "hash_rebuild_pre_tightness");
-            fflush(g_timerFile);
-        }
-#endif
-        g_hash.rebuild(bd, P, buildCellSize(P));
-#ifdef DEBUG_LOG
-        if (g_timerFile) {
-            fprintf(g_timerFile, "%12.4f  [PHASE  end  ] %-20s  cost=%7.3fs\n",
-                    elapsed(), "hash_rebuild_pre_tightness",
-                    elapsed() - tRebuild);
-            fflush(g_timerFile);
-        }
-#endif
-    }
+    g_hash.rebuild(bd, P, buildCellSize(P));
+    
     {
         double avgFreeMove = evalAvgFreeMove(P, bd);
         double avgSzTmp = 0.0;
@@ -283,98 +160,20 @@ int main(int argc, char *argv[]) {
         double stepFactor = stepInit / avgSzTmp;
         double L0_low     = calcLPrime(P);
         double T_low_init = fmax(stepInit * 0.36, L0_low * 0.0005);
-#ifdef DEBUG_LOG
-        if (g_timerFile) {
-            fprintf(g_timerFile,
-                "%12.4f  [DYNAMIC_PAR ] %-20s"
-                "  avgFreeMove=%.6f"
-                "  avgSz=%.6f"
-                "  free/sz=%.4f"
-                "  stepInit=%.6f"
-                "  stepFactor=%.4f"
-                "  T_low_init=%.6f"
-                "  L0=%.6f\n",
-                elapsed(), "positionSA_low_prep",
-                avgFreeMove,
-                avgSzTmp,
-                avgFreeMove / (avgSzTmp > 1e-9 ? avgSzTmp : 1.0),
-                stepInit,
-                stepFactor,
-                T_low_init,
-                L0_low);
-            fflush(g_timerFile);
-        }
-        tPhase = elapsed(); lBefore = L0_low;
-        timerPhaseStart("positionSA_low", lBefore);
-#endif
         positionSALow(P, bd,
                       T_low_init,
                       SA_TMIN,
                       T_SA_LOW_END,
                       stepFactor);
-#ifdef DEBUG_LOG
-        {
-            double lAfter = calcLPrime(P);
-            timerPhaseEnd("positionSA_low", tPhase, lBefore, lAfter);
-        }
-#endif
     }
-#ifdef DEBUG_LOG
-    {
-        double tRebuild = elapsed();
-        if (g_timerFile) {
-            fprintf(g_timerFile, "%12.4f  [PHASE  start] %-20s\n", tRebuild, "hash_rebuild_2");
-            fflush(g_timerFile);
-        }
-#endif
-        g_hash.rebuild(bd, P, buildCellSize(P));
-#ifdef DEBUG_LOG
-        if (g_timerFile) {
-            fprintf(g_timerFile, "%12.4f  [PHASE  end  ] %-20s  cost=%7.3fs\n",
-                    elapsed(), "hash_rebuild_2", elapsed() - tRebuild);
-            fflush(g_timerFile);
-        }
-    }
-#endif
-#ifdef DEBUG_LOG
-    tPhase = elapsed(); lBefore = calcLPrime(P);
-    timerPhaseStart("exactPullback_final", lBefore);
-#endif
+
+    g_hash.rebuild(bd, P, buildCellSize(P));
     exactPullback(P, bd, T_EXACT_FINAL, "exactPullback_final");
-#ifdef DEBUG_LOG
-    {
-        double lAfter = calcLPrime(P);
-        timerPhaseEnd("exactPullback_final", tPhase, lBefore, lAfter);
-    }
-#endif
-#ifdef DEBUG_LOG
-    if (g_timerFile) {
-        fprintf(g_timerFile,
-            "\n%12.4f  [FINAL       ] L'_final=%12.6f\n",
-            elapsed(), calcLPrime(P));
-        int totalNFP = g_nfps.getTotalConstructionCount();
-        int accessedNFP = g_nfps.getAccessedCount();
-        double accessRate = g_nfps.getAccessRate();
-        fprintf(g_timerFile,
-            "%12.4f  [NFP_ACCESS  ] total=%d  accessed=%d  rate=%.4f\n",
-            elapsed(), totalNFP, accessedNFP, accessRate);
-        fflush(g_timerFile);
-    }
-    timerHotspotSummary();
-    logPhaseHeader("final");
-    double finalL = calcLPrime(P);
-    logLine("final", 0, -1, elapsed(), finalL, finalL, "snapshot");
-    logCloseFile();
-    timerCloseFile();
-#endif
-    TL_START("Summary");
-    TL_ATTACH("fastOverlap all calls: " + to_string(g_cntFastOverlap));    TL_ATTACH("exactOverlap all calls: " + to_string(g_cntExactOverlap));    printf("%d\n", n);
-    for (int i=0; i<n; i++) {
+
+    printf("%d\n", n);
+    for (int i=0; i<n; i++) 
         printf("%.5f %.5f\n", P[i].tx, P[i].ty);
-        fflush(stdout);
-    }
     printf("OK\n");
     fflush(stdout);
-    TL_END();
     return 0;
 }
