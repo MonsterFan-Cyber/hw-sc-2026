@@ -127,6 +127,7 @@ int main(int argc, char *argv[]) {
 
     Polygon feasiblePoly; Boundary bd; vector<Polygon> P;
     readInput(feasiblePoly, bd, P);
+    initSnapshoot(feasiblePoly, P); 
     int n = (int)P.size();
     vector<int> perm(n);
     for (int i=0; i<n; i++) perm[i]=i;
@@ -175,5 +176,7 @@ int main(int argc, char *argv[]) {
         printf("%.5f %.5f\n", P[i].tx, P[i].ty);
     printf("OK\n");
     fflush(stdout);
+    // 输出 snapshoot 数据
+    outputSnapshootData();
     return 0;
 }

@@ -2,8 +2,42 @@
 
 #include "lg.h"
 #include "op.h"
+#include "snapshoot.h"
 #include <unordered_set>
+#include <set>
 
+void initSnapshoot(const Polygon& feasiblePoly, const vector<Polygon>& P) {
+    // 格式转换，在调用 snap::g_snapshoot.setPoly 前将 Polygon 转换为 snap::Snapshoot::Poly
+    snap::Snapshoot::Poly snapFeasiblePoly;
+    vector<snap::Snapshoot::Poly> snapPolys;
+    for (const auto& vertex : feasiblePoly.verts) {
+        snapFeasiblePoly.push_back({static_cast<float>(vertex.x), static_cast<float>(vertex.y)});
+    }
+    for (const auto& poly : P) {
+        snap::Snapshoot::Poly snapPoly;
+        for (const auto& vertex : poly.verts) {
+            snapPoly.push_back({static_cast<float>(vertex.x), static_cast<float>(vertex.y)});
+        }
+        snapPolys.push_back(snapPoly);
+    }
+    snap::g_snapshoot.setPoly(snapFeasiblePoly, snapPolys);
+
+}
+
+void addSnapshootFrame(const vector<Polygon>& P, const std::unordered_set<int> &overlappingSet) {
+    vector<array<float, 2>> frame;
+    vector<bool> legal;
+    for (const auto& poly : P) {
+        frame.push_back({static_cast<float>(poly.tx), static_cast<float>(poly.ty)});
+        // 如果当前多边形在 overlappingSet 中，则认为它的位置不合法
+        legal.push_back(overlappingSet.find(&poly - &P[0]) == overlappingSet.end());
+    }
+    snap::g_snapshoot.addFrame(frame, legal);
+}
+
+void outputSnapshootData() {
+    snap::g_snapshoot.write("dist/data/snapshoot_data.bin");
+}
 
 static const double PULL_ANGLES_DEG[] = {
     0.0,
@@ -443,6 +477,9 @@ static void positionSAHigh(vector<Polygon>& P, const Boundary& bd,
                 for (int i = 0; i < n; i++) { bestFeasibleTx[i] = P[i].tx; bestFeasibleTy[i] = P[i].ty; }
             }
         }
+        // 每 5000 次迭代记录一次快照数据
+        if (iteration % 1000 == 0)
+            addSnapshootFrame(P, overlappingSet);
     }
     bool hasResidual = false;
     for (int i = 0; i < n && !hasResidual; i++) {
