@@ -22,11 +22,11 @@ python test_py/auto_test_and_vis.py
 
 ![](test_py/vis_output/backup/practice_00_n40_m100_holes_test_vis.png)
 
-求解过程动态图
+求解过程动态图，开始先使用包围盒 BL+LB 贪心排样，之后再是周期模拟退火算法（抖动剧烈是高温状态，抖动小是低温状态，高低温交替，如同锻造金属一样）
 
 ![](test_py/vis_output/backup/snapshoot_data.gif)
 
-此外还有另一种离散几何放置方法
+此外还有另一种基于显示 NFP+IFP 的离散几何放置方法。
 
 ![](test_py/vis_output/backup/snapshot_animation.gif)
 
