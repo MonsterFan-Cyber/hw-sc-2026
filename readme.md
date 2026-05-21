@@ -20,11 +20,16 @@ python test_py/auto_test_and_vis.py
 ```
 结果文件的可视化图输出到  `test_py/vis_output` 当中。
 
+
 ![](test_py/vis_output/backup/practice_00_n40_m100_holes_test_vis.png)
+
+
+
+![](test_py/vis_output/backup/snapshoot_data.gif)
 
 求解过程动态图，开始先使用包围盒 BL+LB 贪心排样，之后再是周期模拟退火算法（抖动剧烈是高温状态，抖动小是低温状态，高低温交替，如同锻造金属一样）
 
-![](test_py/vis_output/backup/snapshoot_data.gif)
+![](test_py/vis_output/backup/practice_1_vis.png)
 
 ![](test_py/vis_output/backup/snapshoot_data_2.gif)
 
