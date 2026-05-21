@@ -26,6 +26,8 @@ python test_py/auto_test_and_vis.py
 
 ![](test_py/vis_output/backup/snapshoot_data.gif)
 
+![](test_py/vis_output/backup/snapshoot_data_2.gif)
+
 此外还有另一种基于显示 NFP+IFP 的离散几何放置方法。
 
 ![](test_py/vis_output/backup/snapshot_animation.gif)

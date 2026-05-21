@@ -24,9 +24,19 @@ class Snapshoot {
         this->polys = polys;
     }
     void addFrame(const vector<array<float, 2>> &frame,
-                  const vector<bool> &legal) {
-      // 最多记录 100000 帧
-      if (100000 < frames.size()) return;
+                const vector<bool> &legal) {
+        // 最多记录 100000 帧
+        if (frames.size() >= 100000) return;
+        
+        // 检查数据长度一致性
+        if (!frames.empty()) {
+            size_t expected_size = frames[0].size();
+            if (frame.size() != expected_size || legal.size() != expected_size) {
+                fprintf(stderr, "错误：帧 %zu 数据长度不一致！期望 %zu, 实际 frame=%zu, legal=%zu\n",
+                        frames.size(), expected_size, frame.size(), legal.size());
+                return;  // 跳过不一致的帧
+            }
+        }
         
         frames.push_back(frame);
         isLegal.push_back(legal);

@@ -17,7 +17,7 @@ __pycache__
 */main
 */Solution
 *.Identifier
-data
+# data
 # test_py
 cmake-build-debug
 test_py_v2
@@ -30,3 +30,4 @@ src_merge/Solution.cpp
 time_log.txt
 !test_py/vis_output/backup/practice_00_n40_m100_holes_test_vis.png
 gui
+web

@@ -3,8 +3,8 @@
 // ═══════════════════════════════════════════════════════════════
 // 常量
 // ═══════════════════════════════════════════════════════════════
-// const double EXPAND_EPS    = 4e-5;
-const double EXPAND_EPS    = 1e-5;
+const double EXPAND_EPS    = 4e-5;
+// const double EXPAND_EPS    = 1e-5;
 const double AABB_PREC     = 1e-4;
 const double EXACT_PREC    = 1e-5;
 const double SA_PERM_ALPHA = 0.9999;
