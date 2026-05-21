@@ -29,5 +29,6 @@ main_old
 src_merge/Solution.cpp
 time_log.txt
 !test_py/vis_output/backup/practice_00_n40_m100_holes_test_vis.png
+!test_py/vis_output/backup/practice_1_vis.png
 gui
 web
