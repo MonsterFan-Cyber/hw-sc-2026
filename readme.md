@@ -21,6 +21,15 @@ python test_py/auto_test_and_vis.py
 结果文件的可视化图输出到  `test_py/vis_output` 当中。
 
 ![](test_py/vis_output/backup/practice_00_n40_m100_holes_test_vis.png)
+
+求解过程动态图
+
+![](test_py/vis_output/backup/snapshoot_data.gif)
+
+此外还有另一种离散几何放置方法
+
+![](test_py/vis_output/backup/snapshot_animation.gif)
+
 # 核心算法介绍
 
 ## 多阶段优化流程

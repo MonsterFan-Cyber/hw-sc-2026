@@ -64,46 +64,7 @@ static void readInput(Polygon& feasiblePoly, Boundary& bd, vector<Polygon>& poly
     char ok[16]; if (scanf("%15s", ok) != 1) exit(1);
     buildContainPolys(feasiblePoly, polys);
 }
-static void clampAll(vector<Polygon>& P, const Boundary& bd) {
-    double refCx = (bd.xMin + bd.xMax) * 0.5;
-    double refCy = (bd.yMin + bd.yMax) * 0.5;
-    for (int i = 0; i < (int)P.size(); i++) {
-        double mnx = P[i].origCx + P[i].tx - P[i].hw;
-        double mxx = P[i].origCx + P[i].tx + P[i].hw;
-        double mny = P[i].origCy + P[i].ty - P[i].hh;
-        double mxy = P[i].origCy + P[i].ty + P[i].hh;
-        if (mnx < bd.xMin) P[i].tx += bd.xMin - mnx;
-        if (mxx > bd.xMax) P[i].tx -= mxx - bd.xMax;
-        if (mny < bd.yMin) P[i].ty += bd.yMin - mny;
-        if (mxy > bd.yMax) P[i].ty -= mxy - bd.yMax;
-        if (isFeasible(i, Vertex{P[i].tx, P[i].ty})) continue;
-        double tgtTx = refCx - P[i].origCx;
-        double tgtTy = refCy - P[i].origCy;
-        if (!isFeasible(i, Vertex{tgtTx, tgtTy})) {
-            bool found = false;
-            double vxMin = bd.xMin + P[i].hw, vxMax = bd.xMax - P[i].hw;
-            double vyMin = bd.yMin + P[i].hh, vyMax = bd.yMax - P[i].hh;
-            for (int attempt = 0; attempt < 50 && !found; ++attempt) {
-                double cx = vxMin + randDouble() * (vxMax - vxMin);
-                double cy = vyMin + randDouble() * (vyMax - vyMin);
-                double tx = cx - P[i].origCx, ty = cy - P[i].origCy;
-                if (isFeasible(i, Vertex{tx, ty})) {
-                    tgtTx = tx; tgtTy = ty; found = true;
-                }
-            }
-            if (!found) continue;        }
-        double loTx = P[i].tx, loTy = P[i].ty;        double hiTx = tgtTx,   hiTy = tgtTy;        for (int iter = 0; iter < 20; ++iter) {
-            double midTx = (loTx + hiTx) * 0.5;
-            double midTy = (loTy + hiTy) * 0.5;
-            if (isFeasible(i, Vertex{midTx, midTy}))
-                hiTx = midTx, hiTy = midTy;
-            else
-                loTx = midTx, loTy = midTy;
-        }
-        P[i].tx = hiTx;
-        P[i].ty = hiTy;
-    }
-}
+
 int main(int argc, char *argv[]) {
 #ifdef __linux__
     {

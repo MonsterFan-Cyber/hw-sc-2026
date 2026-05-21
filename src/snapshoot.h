@@ -23,7 +23,11 @@ class Snapshoot {
         this->feasiblePoly = feasiblePoly;
         this->polys = polys;
     }
-    void addFrame(const vector<array<float, 2>>& frame, const vector<bool>& legal) {
+    void addFrame(const vector<array<float, 2>> &frame,
+                  const vector<bool> &legal) {
+      // 最多记录 100000 帧
+      if (100000 < frames.size()) return;
+        
         frames.push_back(frame);
         isLegal.push_back(legal);
     }
