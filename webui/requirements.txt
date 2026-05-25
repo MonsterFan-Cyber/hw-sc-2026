@@ -1,0 +1,24 @@
+# Web 快照播放器依赖文件
+# 
+# 本项目仅使用 Python 标准库，无需安装第三方依赖
+# 
+# Python 版本要求：>= 3.7（支持 Python 3.13+）
+# 
+# 已使用的标准库模块：
+# - struct：二进制数据解析
+# - http.server：HTTP 服务器
+# - dataclasses：数据类
+# - json：JSON 处理
+# - os：文件系统操作
+# - sys：系统接口
+# - datetime：日期时间处理
+# - typing：类型注解
+# - enum：枚举类型
+# - re：正则表达式（用于 multipart 解析）
+# - urllib.parse：URL 解析
+#
+# 注意：cgi 模块在 Python 3.13 中已移除
+# 本项目使用自定义 multipart 解析，兼容所有 Python 3.7+ 版本
+#
+# 安装命令：pip install -r requirements.txt
+# （本文件为空，无需安装任何依赖）

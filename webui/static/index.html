@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web 快照播放器</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="drawing-area">
+            <canvas id="mainCanvas" width="1024" height="768"></canvas>
+            <div class="frame-info" id="frameInfo">0 / 0</div>
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="spinner"></div>
+                <div>加载中...</div>
+            </div>
+        </div>
+        
+        <div class="control-panel">
+            <div class="panel-section file-section">
+                <h3>文件选择</h3>
+                <input type="file" id="fileInput" accept=".snpst" style="display: none;">
+                <button class="btn file-btn" id="selectFileBtn">选择文件</button>
+                <div class="filename" id="filename">未选择文件</div>
+            </div>
+            
+            <div class="panel-section playback-section">
+                <h3>播放控制</h3>
+                <div class="button-group">
+                    <button class="btn control-btn" id="playBtn" title="播放">▶</button>
+                    <button class="btn control-btn" id="pauseBtn" title="暂停">⏸</button>
+                    <button class="btn control-btn" id="backwardBtn" title="后退一帧">⏮</button>
+                    <button class="btn control-btn" id="forwardBtn" title="前进一帧">⏭</button>
+                </div>
+                <div class="control-row">
+                    <label>速度:</label>
+                    <select id="speedSelect" class="select-input">
+                        <option value="0.5">0.5x</option>
+                        <option value="1.0" selected>1x</option>
+                        <option value="2.0">2x</option>
+                        <option value="4.0">4x</option>
+                    </select>
+                </div>
+                <div class="control-row">
+                    <label>循环:</label>
+                    <input type="checkbox" id="loopCheckbox">
+                </div>
+                <div class="control-row">
+                    <label>主题:</label>
+                    <select id="themeSelect" class="select-input">
+                        <option value="dark" selected>暗色</option>
+                        <option value="light">白色</option>
+                    </select>
+                </div>
+                <div class="control-row">
+                    <label>显示ID:</label>
+                    <input type="checkbox" id="showIdCheckbox">
+                </div>
+            </div>
+            
+            <div class="panel-section frame-section">
+                <h3>帧控制</h3>
+                <div class="control-row">
+                    <label>开始帧:</label>
+                    <input type="number" id="startFrameInput" class="number-input" min="0" value="0">
+                </div>
+                <div class="slider-container">
+                    <input type="range" id="frameSlider" class="frame-slider" min="0" max="0" value="0">
+                    <div class="slider-markers" id="sliderMarkers"></div>
+                </div>
+                <div class="frame-display" id="frameDisplay">当前帧: 0 / 0</div>
+                <div class="stats-display">
+                    <div class="stat-item">
+                        <label>合法多边形:</label>
+                        <span id="legalPolygonCount">0 / 0</span>
+                    </div>
+                    <div class="stat-item">
+                        <label>位移距离 L:</label>
+                        <span id="totalDisplacement">0.000</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section log-section">
+                <h3>日志区域</h3>
+                <div class="log-container" id="logContainer">
+                    <div class="log-placeholder">暂无日志信息</div>
+                </div>
+                <button class="btn clear-log-btn" id="clearLogBtn">清空日志</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/visual_styles.js"></script>
+    <script src="js/coordinate_transform.js"></script>
+    <script src="js/canvas_renderer.js"></script>
+    <script src="js/frame_transition.js"></script>
+    <script src="js/playback_controller.js"></script>
+    <script src="js/frame_navigator.js"></script>
+    <script src="js/view_controller.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
