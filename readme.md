@@ -33,7 +33,7 @@ python test_py/auto_test_and_vis.py
 
 ![](test_py/vis_output/backup/snapshoot_data_2.gif)
 
-此外还有另一种基于显示 NFP+IFP 的离散几何放置方法。
+此外还有另一种基于显示 NFP+IFP 的离散几何放置方法，该算法虽然不存在死锁等问题，只需要改变放样顺序就能得到不同的解，但是计算复杂度过高，几乎无法在1分钟内得到高分结果，在提交代码时分数非常低，被放弃。
 
 ![](test_py/vis_output/backup/snapshot_animation.gif)
 
